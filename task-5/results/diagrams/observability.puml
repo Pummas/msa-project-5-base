@@ -1,0 +1,53 @@
+@startuml
+' C4 Container diagram for TradeWare observability. Render with PlantUML.
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_LEFT_RIGHT()
+title TradeWare — To Be: observability
+
+Person(warehouse, "Сотрудник склада", "Запускает загрузку и контролирует статус")
+
+Container_Boundary(tw, "TradeWare") {
+  Container(ui, "Web UI", "Web", "Запуск загрузки, просмотр статуса и отчёта")
+  Container(api, "Java API / монолит", "Java 11, WildFly", "Регистрирует операцию, API и отчёты")
+  Container(batch, "Spring Batch worker/application", "Java 11, Spring Batch + Scheduling", "Читает CSV, обрабатывает строки и обновляет номенклатуру")
+  ContainerDb(db, "PostgreSQL", "PostgreSQL", "Номенклатура, справочники и статусы")
+  ContainerDb(jobrepo, "JobRepository", "Spring Batch / PostgreSQL", "История job/step и checkpoint")
+  Container(actuator, "Actuator/Micrometer endpoint", "HTTP /actuator/prometheus", "Метрики API и worker")
+}
+
+System_Ext(gcs, "GCS", "Входные CSV-файлы")
+System_Ext(prom, "Prometheus", "Сбор метрик и recording/alert rules")
+System_Ext(grafana, "Grafana", "Dashboards и анализ метрик")
+System_Ext(alertmanager, "Alertmanager", "Группировка, deduplication и routing alerts")
+System_Ext(notify, "Email / Slack", "Канал уведомлений")
+System_Ext(jsonlogs, "JSON logs", "Structured logs API и worker")
+System_Ext(filebeat, "Filebeat", "Сбор JSON logs")
+System_Ext(logstash, "Logstash", "Нормализация и redaction")
+System_Ext(elastic, "Elasticsearch", "Индекс хранения логов")
+System_Ext(kibana, "Kibana", "Поиск и dashboards логов")
+
+Rel(warehouse, ui, "Работает через")
+Rel(ui, api, "HTTPS: запуск и статус")
+Rel(api, db, "Регистрирует операцию, читает статус")
+Rel(api, batch, "Передаёт запрос на запуск")
+Rel(batch, gcs, "Читает CSV")
+Rel(batch, db, "Читает справочники, обновляет номенклатуру")
+Rel(batch, jobrepo, "Читает/фиксирует job и checkpoint")
+
+Rel(api, actuator, "Публикует метрики")
+Rel(batch, actuator, "Публикует метрики")
+Rel(actuator, prom, "Metrics scrape: /actuator/prometheus")
+Rel(prom, grafana, "Запросы метрик")
+Rel(prom, alertmanager, "Prometheus alerts")
+Rel(alertmanager, notify, "Email/Slack alerts")
+
+Rel(api, jsonlogs, "Пишет structured JSON logs")
+Rel(batch, jsonlogs, "Пишет structured JSON logs")
+Rel(jsonlogs, filebeat, "Чтение логов")
+Rel(filebeat, logstash, "Доставка JSON")
+Rel(logstash, elastic, "Нормализованные логи")
+Rel(kibana, elastic, "Поиск и агрегации")
+
+SHOW_LEGEND()
+@enduml
