@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: shipment-events-export
+  namespace: logistics-export
+spec:
+  schedule: "0 20 * * *"
+  timeZone: Europe/Moscow
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            fsGroup: 10001
+          containers:
+            - name: exporter
+              image: shipment-events-exporter:0.1.0
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - configMapRef: { name: exporter-config }
+                - secretRef: { name: logistics-db }
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { cpu: 500m, memory: 256Mi }
+              volumeMounts:
+                - { name: export, mountPath: /export }
+          volumes:
+            - name: export
+              persistentVolumeClaim: { claimName: export-pvc }

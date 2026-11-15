@@ -1,0 +1,32 @@
+@startuml
+' C4 Context/Container To Be. Render with PlantUML.
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_LEFT_RIGHT()
+title TradeWare — To Be: асинхронная загрузка номенклатуры
+
+Person(warehouse, "Сотрудник склада", "Запрашивает загрузку и контролирует её статус")
+
+System_Boundary(tw, "TradeWare") {
+  Container(ui, "Web UI", "Web", "Запуск загрузки и просмотр статуса")
+  Container(api, "Java API / монолит", "Java 11, WildFly", "Регистрирует операцию и передаёт запрос на запуск")
+  Container(batch, "Spring Batch worker/application", "Java 11, Spring Batch + Spring Scheduling", "Запускает job по встроенному расписанию @Scheduled; читает CSV и справочники, обрабатывает строки и обновляет номенклатуру")
+  ContainerDb(db, "PostgreSQL", "PostgreSQL", "Номенклатура, справочные данные и статусы операций")
+  ContainerDb(jobrepo, "JobRepository", "Spring Batch / PostgreSQL", "Состояние job/step и checkpoint")
+}
+
+System_Ext(gcs, "GCS", "Входные CSV-файлы")
+System_Ext(obs, "Наблюдаемость", "ELK, Prometheus/Grafana и алерты")
+
+Rel(warehouse, ui, "Работает через")
+Rel(ui, api, "HTTPS: запускает загрузку, получает статус")
+Rel(api, db, "Регистрирует операцию, читает статус")
+Rel(api, batch, "Передаёт запрос/operation")
+Rel(batch, gcs, "Читает входные CSV")
+Rel(batch, db, "Читает справочники; обновляет номенклатуру")
+Rel(batch, jobrepo, "Читает/фиксирует состояние job и step")
+Rel(batch, obs, "Логи, метрики и ошибки")
+Rel(api, obs, "Логи и метрики API")
+
+SHOW_LEGEND()
+@enduml

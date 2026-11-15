@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: exporter-config
+  namespace: logistics-export
+data:
+  DB_HOST: logistics-postgres
+  DB_PORT: "5432"
+  DB_NAME: logistics
+  EXPORT_DIR: /export
+  EXPORT_FILENAME: shipment_events.csv

@@ -1,0 +1,9 @@
+NAME                                   SCHEDULE     TIMEZONE        SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cronjob.batch/shipment-events-export   0 20 * * *   Europe/Moscow   False     0        <none>          2m25s
+
+NAME                                      STATUS     COMPLETIONS   DURATION   AGE
+job.batch/shipment-events-export-manual   Complete   1/1           3s         112s
+
+NAME                                      READY   STATUS      RESTARTS   AGE
+pod/logistics-postgres-64d8c65dcc-c7zx2   1/1     Running     0          2m25s
+pod/shipment-events-export-manual-s5brn   0/1     Completed   0          112s

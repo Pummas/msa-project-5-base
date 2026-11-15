@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: logistics-export
+data:
+  001-schema-and-sample.sql: |
+    CREATE TABLE shipment_events (
+      event_id BIGSERIAL PRIMARY KEY,
+      shipment_id BIGINT NOT NULL,
+      event_type TEXT NOT NULL,
+      event_time TIMESTAMPTZ NOT NULL,
+      location TEXT
+    );
+    INSERT INTO shipment_events (shipment_id, event_type, event_time, location) VALUES
+      (10001, 'picked_up', '2026-11-13T08:15:00Z', 'Moscow'),
+      (10001, 'in_transit', '2026-11-13T12:30:00Z', 'Tver'),
+      (10002, 'delivered', '2026-11-13T16:45:00Z', 'Saint Petersburg');
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logistics-postgres
+  namespace: logistics-export
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: logistics-postgres }
+  template:
+    metadata:
+      labels: { app: logistics-postgres }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16.6
+          ports: [{ containerPort: 5432 }]
+          env:
+            - name: POSTGRES_DB
+              value: logistics
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: logistics-db, key: DB_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: logistics-db, key: DB_PASSWORD } }
+          volumeMounts:
+            - { name: init, mountPath: /docker-entrypoint-initdb.d }
+          readinessProbe:
+            exec: { command: ["sh", "-c", "pg_isready -U logistics -d logistics"] }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: init
+          configMap: { name: postgres-init }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logistics-postgres
+  namespace: logistics-export
+spec:
+  selector: { app: logistics-postgres }
+  ports: [{ port: 5432, targetPort: 5432 }]
