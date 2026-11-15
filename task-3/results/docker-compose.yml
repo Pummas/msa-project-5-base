@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16.6
+    environment:
+      POSTGRES_DB: logistics
+      POSTGRES_USER: logistics
+      POSTGRES_PASSWORD: local-only-password
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logistics -d logistics"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shipment-events-exporter:0.1.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: logistics
+      DB_USER: logistics
+      DB_PASSWORD: local-only-password
+      EXPORT_DIR: /export
+    volumes:
+      - ./export:/export
+
+volumes:
+  postgres-data:

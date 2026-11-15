@@ -1,0 +1,4 @@
+event_id,shipment_id,event_type,event_time,location
+1,10001,picked_up,2026-11-13 08:15:00+00:00,Moscow
+2,10001,in_transit,2026-11-13 12:30:00+00:00,Tver
+3,10002,delivered,2026-11-13 16:45:00+00:00,Saint Petersburg

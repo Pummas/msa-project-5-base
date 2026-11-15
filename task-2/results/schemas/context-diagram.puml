@@ -1,0 +1,24 @@
+@startuml
+' C4 Context diagram. Render with PlantUML; the include is fetched from GitHub.
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_LEFT_RIGHT()
+title Контекст ежедневной генерации B2B-прайс-листов
+
+Person(b2b, "B2B-клиент", "Получает индивидуальный CSV/XLS(X)-прайс-лист")
+
+System_Boundary(cloud, "Облачная Kubernetes-платформа") {
+  System(exporter, "Price List Exporter (Kubernetes CronJob)", "Выполняет SQL JOIN, формирует и публикует прайс-листы")
+}
+
+SystemDb_Ext(postgres, "PostgreSQL", "products, categories, clients, client_prices")
+System_Ext(storage, "Object Storage", "CSV/XLS(X), manifests и контрольные суммы")
+System_Ext(obs, "Logging & Monitoring", "Логи, метрики, дашборды и алерты")
+
+Rel(exporter, postgres, "Читает данные по TLS")
+Rel(exporter, storage, "Загружает готовые файлы")
+Rel(exporter, obs, "Публикует логи и метрики")
+Rel(b2b, storage, "Скачивает прайс-лист по согласованному каналу")
+
+SHOW_LEGEND()
+@enduml
